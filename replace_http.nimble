@@ -4,7 +4,8 @@ version       = "0.1.0"
 author        = "notoiro297"
 description   = "A new awesome nimble package"
 license       = "MIT"
-srcDir        = "src"
+srcDir        = "."
+binDir        = "."
 bin           = @["ReplaceHttp"]
 
 

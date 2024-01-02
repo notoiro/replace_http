@@ -1,6 +1,5 @@
 # RequestHttp
 ```shell
-nimble install
-nim c -d:relese -o:ReplaceHttp ReplaceHttp.nim
+nimble build
 ./ReplaceHttp
 ```
