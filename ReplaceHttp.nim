@@ -88,7 +88,4 @@ proc main() {.async.} =
   app.addRoute("/replace", onRequest, HttpPost)
   app.run()
 
-  echo "localhost:2972"
-
-
 discard main()
