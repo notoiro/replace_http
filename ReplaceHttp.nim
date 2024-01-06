@@ -1,12 +1,9 @@
 import std/json
 import std/sequtils
-import std/osproc
 import std/sugar
 import std/re
 import unicode
-import std/times
 import prologue
-import std/os
 import std/dirs
 import std/paths
 import std/files
