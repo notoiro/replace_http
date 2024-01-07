@@ -62,13 +62,14 @@ proc load_dict_dir*(dict_path = "./dicts/"): seq[DictData] =
 proc engtokana(text: string): string {.gcsafe.} =
   var tmp_text = text
 
-  var matchs:seq[DictData]
+  var replace_arr :seq[DictData]
   {.gcsafe.}:
     for dic in dict:
-      if(text.match(dic.from_re)): matchs.add(dic)
+      if(text.contains(dic.from_re)):
+        replace_arr.add(dic)
       #tmp_text = tmp_text.replace(dic.from_re, dic.to)
 
-    for m in matchs:
+    for m in replace_arr:
       tmp_text = tmp_text.replace(m.from_re, m.to)
 
   result = tmp_text
@@ -85,7 +86,7 @@ proc onRequest*(ctx: Context): Future[void] {.async, gcsafe.} =
     resp "error", Http400
 
 proc main() {.async.} =
-  echo "start"
+  echo "starting..."
   dict = load_dict_dir()
   echo "dict loaded"
 
