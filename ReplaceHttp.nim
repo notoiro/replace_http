@@ -8,14 +8,30 @@ import std/dirs
 import std/paths
 import std/files
 import algorithm
+import std/math
 
 type DictData* = ref object
   from_re*: re.Regex
   to*: string
 
-var dict: seq[DictData]
+var dict: seq[seq[DictData]]
 
-proc load_dict_dir*(dict_path = "./dicts/"): seq[DictData] =
+proc slice_by_num[T](arr: seq[T], num: int): seq[seq[T]] =
+  let result_len = toInt(ceil(arr.len / num))
+  echo arr.len
+  var result_arr = newSeq[seq[T]](result_len)
+  for i in 0..<result_len:
+    let x = i * num
+    var y = (i + 1) * num - 1
+
+    if(y >= arr.len):
+      y = arr.len - 1
+
+    result_arr[i] = arr[x..y]
+
+  return result_arr
+
+proc load_dict_dir*(dict_path = "./dicts/"): seq[seq[DictData]] =
   var path = paths.Path(dict_path)
 
   if(not dirExists(path)):
@@ -57,20 +73,41 @@ proc load_dict_dir*(dict_path = "./dicts/"): seq[DictData] =
     echo repr(getCurrentException())
     quit(1)
 
-  result = result_arr
+  result = slice_by_num(result_arr, 2000)
 
-proc engtokana(text: string): string {.gcsafe.} =
+proc test_patterns(patterns: seq[DictData], text: string): Future[seq[DictData]] =
+  var result_future = newFuture[seq[DictData]]("test_patterns")
+
+  var result_arr: seq[DictData]
+
+  for p in patterns:
+    if(text.contains(p.from_re)):
+      result_arr.add(p)
+
+  result_future.complete(result_arr)
+
+  return result_future
+
+proc engtokana(text: string): Future[string] {.async, gcsafe.} =
   var tmp_text = text
 
-  var replace_arr :seq[DictData]
+  var tests:seq[Future[seq[DictData]]]
   {.gcsafe.}:
     for dic in dict:
-      if(text.contains(dic.from_re)):
-        replace_arr.add(dic)
-      #tmp_text = tmp_text.replace(dic.from_re, dic.to)
+      tests.add(test_patterns(dic, text))
 
-    for m in replace_arr:
-      tmp_text = tmp_text.replace(m.from_re, m.to)
+  var complete_tests = await all(tests)
+  var replaces: seq[DictData]
+  for t in complete_tests:
+    replaces = concat(replaces, t)
+
+  for m in replaces:
+    tmp_text = tmp_text.replace(m.from_re, m.to)
+  #{.gcsafe.}:
+  #  for dic in dict:
+  #    if(text.contains(dic.from_re)):
+  #      replace_arr.add(dic)
+      #tmp_text = tmp_text.replace(dic.from_re, dic.to)
 
   result = tmp_text
 
@@ -78,7 +115,7 @@ proc onRequest*(ctx: Context): Future[void] {.async, gcsafe.} =
   try:
     var body = ctx.request.body.parseJson
     var tx = body["text"].getStr
-    tx = engtokana(tx)
+    tx = await engtokana(tx)
     var responce = %*{"text": tx}
     resp jsonResponse(responce)
   except:
