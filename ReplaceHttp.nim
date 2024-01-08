@@ -62,14 +62,10 @@ proc load_dict_dir*(dict_path = "./dicts/"): seq[DictData] =
 proc engtokana(text: string): string {.gcsafe.} =
   var tmp_text = text
 
-  var replace_arr: seq[DictData]
   {.gcsafe.}:
     for dic in dict:
-      if(text.contains(dic.from_re)):
-        replace_arr.add(dic)
-
-    for m in replace_arr:
-      tmp_text = tmp_text.replace(m.from_re, m.to)
+      if(tmp_text.contains(dic.from_re)):
+        tmp_text = tmp_text.replace(dic.from_re, dic.to)
 
   result = tmp_text
 
