@@ -8,6 +8,9 @@ import std/dirs
 import std/paths
 import std/files
 import algorithm
+import std/parseopt
+import std/os
+import std/strutils
 
 type DictData* = ref object
   from_re*: re.Regex
@@ -81,11 +84,24 @@ proc onRequest*(ctx: Context): Future[void] {.async, gcsafe.} =
     resp "error", Http400
 
 proc main() {.async.} =
+  var optparser = initOptParser(quoteShellCommand(commandLineParams()))
+  var port = 2972
+  for kind, key, val in optparser.getopt():
+    case kind
+    of cmdLongOption, cmdShortOption:
+      case key
+      of "port", "p":
+        port = val.parseInt
+    of cmdArgument:
+      port = key.parseInt
+    of cmdEnd:
+      discard
+
   echo "starting..."
   dict = load_dict_dir()
   echo "dict loaded"
 
-  var settings = newSettings(port = Port(2972))
+  var settings = newSettings(port = Port(port))
   var app = newApp(settings = settings)
   app.addRoute("/replace", onRequest, HttpPost)
   app.run()
